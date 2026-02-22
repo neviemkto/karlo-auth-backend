@@ -74,7 +74,7 @@ async function sendResetEmail(toEmail, resetToken, gameUrl) {
                     <p style="font-size:15px;color:#ccc;">Someone requested a password reset for your account.</p>
                     <p style="font-size:15px;color:#ccc;">Click the button below to reset your password. This link expires in <strong>1 hour</strong>.</p>
                     <div style="text-align:center;margin:32px 0;">
-                        <a href="${resetLink}" style="background:linear-gradient(135deg,#e67e22,#f1c40f);color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:900;letter-spacing:2px;font-size:14px;">RESET PASSWORD</a>
+                        <a href="${resetLink}" style="background-color:#e67e22; color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:8px; font-weight:bold; display:inline-block; font-size:14px;">RESET PASSWORD</a>
                     </div>
                     <p style="font-size:12px;color:#666;">If you didn't request this, ignore this email. Your password won't change.</p>
                     <p style="font-size:11px;color:#444;word-break:break-all;">Link: ${resetLink}</p>

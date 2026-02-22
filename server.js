@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
@@ -48,38 +47,48 @@ progressSchema.index({ userId: 1, gameId: 1 }, { unique: true });
 const User     = mongoose.model('User', userSchema);
 const Progress = mongoose.model('Progress', progressSchema);
 
-// ── Email transporter ─────────────────────────────────────────────────────────
-const mailer = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS   // Gmail App Password (not your real password!)
-    }
-});
-
+// ── Email transporter (Brevo API) ─────────────────────────────────────────────
 async function sendResetEmail(toEmail, resetToken, gameUrl) {
     const resetLink = `${gameUrl}?reset=${resetToken}`;
-    await mailer.sendMail({
-        from: `"Karlo's Login" <${process.env.EMAIL_USER}>`,
-        to: toEmail,
-        subject: "Password Reset — Karlo's Login",
-        html: `
-        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;background:#0d0d18;color:#fff;border-radius:12px;overflow:hidden;">
-            <div style="background:linear-gradient(135deg,#e67e22,#f1c40f);padding:24px;text-align:center;">
-                <h2 style="margin:0;font-size:22px;letter-spacing:2px;">⚡ KARLO'S LOGIN</h2>
-            </div>
-            <div style="padding:32px;">
-                <p style="font-size:15px;color:#ccc;">Someone requested a password reset for your account.</p>
-                <p style="font-size:15px;color:#ccc;">Click the button below to reset your password. This link expires in <strong>1 hour</strong>.</p>
-                <div style="text-align:center;margin:32px 0;">
-                    <a href="${resetLink}" style="background:linear-gradient(135deg,#e67e22,#f1c40f);color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:900;letter-spacing:2px;font-size:14px;">RESET PASSWORD</a>
+    
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            sender: { 
+                email: process.env.EMAIL_USER, // Uses the email from your Render environment
+                name: "Karlo's Login" 
+            },
+            to: [{ email: toEmail }],
+            subject: "Password Reset — Karlo's Login",
+            htmlContent: `
+            <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;background:#0d0d18;color:#fff;border-radius:12px;overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#e67e22,#f1c40f);padding:24px;text-align:center;">
+                    <h2 style="margin:0;font-size:22px;letter-spacing:2px;">⚡ KARLO'S LOGIN</h2>
                 </div>
-                <p style="font-size:12px;color:#666;">If you didn't request this, ignore this email. Your password won't change.</p>
-                <p style="font-size:11px;color:#444;word-break:break-all;">Link: ${resetLink}</p>
+                <div style="padding:32px;">
+                    <p style="font-size:15px;color:#ccc;">Someone requested a password reset for your account.</p>
+                    <p style="font-size:15px;color:#ccc;">Click the button below to reset your password. This link expires in <strong>1 hour</strong>.</p>
+                    <div style="text-align:center;margin:32px 0;">
+                        <a href="${resetLink}" style="background:linear-gradient(135deg,#e67e22,#f1c40f);color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:900;letter-spacing:2px;font-size:14px;">RESET PASSWORD</a>
+                    </div>
+                    <p style="font-size:12px;color:#666;">If you didn't request this, ignore this email. Your password won't change.</p>
+                    <p style="font-size:11px;color:#444;word-break:break-all;">Link: ${resetLink}</p>
+                </div>
             </div>
-        </div>
-        `
+            `
+        })
     });
+
+    if (!res.ok) {
+        const err = await res.json();
+        console.error("Brevo Error:", err);
+        throw new Error('Failed to send email');
+    }
 }
 
 // ── Auth middleware ───────────────────────────────────────────────────────────

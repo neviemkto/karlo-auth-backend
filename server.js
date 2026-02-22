@@ -10,14 +10,11 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 
 // ── CORS — allow all Karlo game domains ───────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
-    origin: function(origin, cb) {
-        // Allow requests with no origin (mobile apps, Postman) or matching allowed origins
-        if (!origin || allowedOrigins.length === 0 || allowedOrigins.some(o => origin.startsWith(o))) {
-            return cb(null, true);
-        }
-        cb(new Error('Not allowed by CORS'));
+    origin: function (origin, callback) {
+        // This tells the server to accept connections from literally ANYWHERE, 
+        // including local computer files (origin 'null') and web portals.
+        callback(null, true);
     },
     credentials: true
 }));
